@@ -1,9 +1,14 @@
 import os
 from tqdm import tqdm
-from helpers import similar, file_name
+from helpers import file_name
+import jellyfish
 
-#  Get all the letter files
+# Settings
 folder = "alfabe"
+max_distance = 2
+
+
+# Get all the letter files
 letter_files = []
 for root, dirs, files in os.walk("alfabe/vowels", topdown=False):
     for name in files:
@@ -23,13 +28,13 @@ if not os.path.exists(out_path):
 def compare(word, other_words, out):
     # Filter other words that are too long out for performance
     word_length = len(word)
-    other_words = [other_word.strip() for other_word in other_words if abs(len(other_word)-word_length) <= 2]
+    other_words = [other_word.strip() for other_word in other_words if abs(len(other_word)-word_length) <= max_distance]
 
     # Calculate word similarities (and keep only the ones similar enough)
-    other_words = [(other_word, similar(other_word, word)) for other_word in other_words]
+    other_words = [(other_word, jellyfish.levenshtein_distance(other_word, word)) for other_word in other_words]
     
     # Only keep the similar enough words
-    # other_words = [(other_word, similarity) for (other_word, similarity) in other_words if similarity > 0.8]
+    other_words = [(other_word, similarity) for (other_word, similarity) in other_words if similarity <= max_distance]
 
     # Sort them by similarity
     other_words.sort(key=lambda tup: tup[1])
