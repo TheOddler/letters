@@ -5,26 +5,19 @@ from collections import defaultdict
 import jellyfish
 
 # Settings
-folder = "alfabe"
+vowels_folder = "alfabe/vowels"
+consonant_folder = "alfabe/consonant"
 max_distance = 4
+out_path = "out"
 
-
-# Get all the letter files
-letter_files = []
-for root, dirs, files in os.walk("alfabe/vowels", topdown=False):
-    for name in files:
-        letter_files.append(os.path.join(root, name))
-
-# Sort them because then I can print and they are alphabetically
-letter_files.sort(key=file_name)
 
 # Make sure the output folder exists
-out_path = "out"
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 
+
 # The function that compares the words
-def compare(word, other_words, out):
+def process_word(word, other_words, out):
     # Clean the word
     word = word.strip()
 
@@ -58,20 +51,36 @@ def compare(word, other_words, out):
         out.write("\n")
 
 
-# Do the actual calculation
-for f in letter_files:
-    letter = file_name(f)
-    words = open(f, "r").readlines()
+def process_files(letter_files):
+    for letter_file in letter_files:
+        letter = file_name(letter_file)
+        words = open(letter_file, "r").readlines()
 
-    def other_filter(fn): return file_name(fn) != letter
-    other_letter_files = filter(other_filter, letter_files)
-    for f in other_letter_files:
-        other_letter = file_name(f)
-        other_words = open(f, "r").readlines()
+        def other_filter(fn): return file_name(fn) != letter
+        other_letter_files = filter(other_filter, letter_files)
+        for other_letter_file in other_letter_files:
+            other_letter = file_name(other_letter_file)
+            other_words = open(other_letter_file, "r").readlines()
 
-        print(f"{letter}-{other_letter}")
+            label = f"{letter}-{other_letter}"
+            out = open(f"{out_path}/{label}.txt", "w")
 
-        out = open(f"{out_path}/{letter}-{other_letter}.txt", "w")
+            for word in tqdm(words, desc=label):
+                process_word(word, other_words, out)
 
-        for word in tqdm(words):
-            compare(word, other_words, out)
+
+def process_folder(folder_path):
+    # Get all the letter files
+    letter_files = []
+    for root, _, files in os.walk(folder_path, topdown=False):
+        for name in files:
+            letter_files.append(os.path.join(root, name))
+
+    # Sort them because then I can print and they are alphabetically
+    letter_files.sort(key=file_name)
+
+    # Process the files
+    process_files(letter_files)
+
+process_folder(vowels_folder)
+process_folder(consonant_folder)
