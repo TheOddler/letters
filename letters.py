@@ -63,6 +63,7 @@ def process_files(letter_files):
     for letter_file in letter_files:
         letter = file_name(letter_file)
         words = open(letter_file, "r").readlines()
+        words_count = len(words)
 
         def other_filter(fn): return file_name(fn) != letter
         other_letter_files = filter(other_filter, letter_files)
@@ -72,10 +73,9 @@ def process_files(letter_files):
 
             label = f"{letter}-{other_letter}"
             out = open(f"{out_path}/{label}.txt", "w")
-            other_words_count = len(other_words)
 
             with Pool(cpu_count() - 1) as pool:
-                infos = tqdm(pool.imap(partial(process_word, other_words=other_words), words), total=other_words_count, desc=label)
+                infos = tqdm(pool.imap(partial(process_word, other_words=other_words), words), total=words_count, desc=label)
 
                 for (word, distance_groups) in tqdm(infos, desc="Writing"):
                     write_info(word, distance_groups, out)
