@@ -1,11 +1,12 @@
 import os
 from tqdm import tqdm
 from helpers import file_name
+from collections import defaultdict
 import jellyfish
 
 # Settings
 folder = "alfabe"
-max_distance = 2
+max_distance = 4
 
 
 # Get all the letter files
@@ -23,30 +24,38 @@ if not os.path.exists(out_path):
     os.makedirs(out_path)
 
 # The function that compares the words
-
-
 def compare(word, other_words, out):
-    # Filter other words that are too long out for performance
+    # Clean the word
+    word = word.strip()
+
+    # Helper value
     word_length = len(word)
-    other_words = [other_word.strip() for other_word in other_words if abs(len(other_word)-word_length) <= max_distance]
-
-    # Calculate word similarities (and keep only the ones similar enough)
-    other_words = [(other_word, jellyfish.levenshtein_distance(other_word, word)) for other_word in other_words]
     
-    # Only keep the similar enough words
-    other_words = [(other_word, similarity) for (other_word, similarity) in other_words if similarity <= max_distance]
+    # Group the other words on distance
+    distance_groups = defaultdict(list)
+    for other_word in other_words:
+        other_word = other_word.strip()
 
-    # Sort them by similarity
-    other_words.sort(key=lambda tup: tup[1])
+        # Remove words too diffent in length, faster than calculating the levenstein distance, so should improve performance
+        len_diff = abs(len(other_word) - word_length)
+        if len_diff > max_distance: continue
 
-    # Keep only the words
-    other_words = [other_word for (other_word, _) in other_words]
+        # Only keep the similar enough words
+        distance = jellyfish.levenshtein_distance(other_word, word)
+        if distance > max_distance: continue
+
+        # Group the words we keep
+        distance_groups[distance].append(other_word)
 
     # Write
     out.write(word)
-    out.write(" --> ")
-    out.write(", ".join(other_words))
-    out.write("\n")
+    out.write(" -->\n")
+    for distance, words in sorted(distance_groups.items(), key=lambda i: i[0]):
+        out.write("\t")
+        out.write(str(distance))
+        out.write(": ")
+        out.write(", ".join(words))
+        out.write("\n")
 
 
 # Do the actual calculation
@@ -65,5 +74,4 @@ for f in letter_files:
         out = open(f"{out_path}/{letter}-{other_letter}.txt", "w")
 
         for word in tqdm(words):
-            word = word.strip()
             compare(word, other_words, out)
