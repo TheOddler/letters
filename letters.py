@@ -77,7 +77,7 @@ def process_files(letter_files):
             with Pool(cpu_count() - 1) as pool:
                 infos = tqdm(pool.imap(partial(process_word, other_words=other_words), words), total=words_count, desc=label)
 
-                for (word, distance_groups) in tqdm(infos, desc="Writing"):
+                for (word, distance_groups) in infos:
                     write_info(word, distance_groups, out)
 
 
