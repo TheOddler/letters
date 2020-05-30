@@ -3,6 +3,8 @@ from tqdm import tqdm
 from helpers import file_name
 from collections import defaultdict
 import jellyfish
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 # Settings
 vowels_folder = "alfabe/vowels"
@@ -17,7 +19,7 @@ if not os.path.exists(out_path):
 
 
 # The function that compares the words
-def process_word(word, other_words, out):
+def process_word(word, other_words):
     # Clean the word
     word = word.strip()
 
@@ -39,8 +41,11 @@ def process_word(word, other_words, out):
 
         # Group the words we keep
         distance_groups[distance].append(other_word)
+    
+    return word, distance_groups
 
-    # Write
+
+def write_info(word, distance_groups, out):
     out.write(word)
     out.write(" -->\n")
     for distance, words in sorted(distance_groups.items(), key=lambda i: i[0]):
@@ -49,6 +54,9 @@ def process_word(word, other_words, out):
         out.write(": ")
         out.write(", ".join(words))
         out.write("\n")
+
+
+
 
 
 def process_files(letter_files):
@@ -64,9 +72,13 @@ def process_files(letter_files):
 
             label = f"{letter}-{other_letter}"
             out = open(f"{out_path}/{label}.txt", "w")
+            other_words_count = len(other_words)
 
-            for word in tqdm(words, desc=label):
-                process_word(word, other_words, out)
+            with Pool(cpu_count() - 1) as pool:
+                infos = list(tqdm(pool.imap(partial(process_word, other_words=other_words), words), total=other_words_count, desc=label))
+
+                for (word, distance_groups) in tqdm(infos, desc="Writing"):
+                    write_info(word, distance_groups, out)
 
 
 def process_folder(folder_path):
@@ -81,6 +93,7 @@ def process_folder(folder_path):
 
     # Process the files
     process_files(letter_files)
+
 
 process_folder(vowels_folder)
 process_folder(consonant_folder)
