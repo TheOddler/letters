@@ -9,7 +9,7 @@ For example, educational research might use these for a spelling task or lingusi
 
 # Usage
 
-Simply run `letter.py`
+Simply run `py letter.py` (or `python3 letter.py`)
 
 # Requirements
 
